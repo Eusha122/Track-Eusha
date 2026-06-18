@@ -6,29 +6,32 @@ import { ScreenShell } from '../components/ui/ScreenShell';
 export function TutorialScreenTwo({ onContinue }: { onContinue: () => void }) {
   return (
     <ScreenShell>
-      <div className="flex flex-col items-center gap-10 text-center">
-        <ScreenHeading>Mission Accepted</ScreenHeading>
-        <RevealLines
-          lines={[
-            {
-              text: 'This application has been authorized to assist in locating one (1) Eusha.',
-              delay: 0.3,
-            },
-            {
-              text: 'Current Status:',
-              delay: 1.8,
-              className: 'text-sm uppercase tracking-widest text-slate-400',
-            },
-            {
-              text: 'Still missing.',
-              delay: 2.3,
-              className: 'text-lg font-medium text-slate-800',
-            },
-          ]}
-        />
-        <Button delay={3.1} onClick={onContinue}>
-          Continue
-        </Button>
+      <div className="flex flex-col items-center gap-8 w-full max-w-sm mx-auto">
+        <ScreenHeading delay={0.1}>The Target</ScreenHeading>
+        <div className="w-full mt-4">
+          <RevealLines
+            lines={[
+              {
+                text: 'Eusha uses an advanced scrambling device.',
+                delay: 0.4,
+              },
+              {
+                text: 'Standard GPS tracking methods will fail.',
+                delay: 1.5,
+              },
+              {
+                text: 'Current Status: Still missing.',
+                delay: 2.8,
+                className: 'text-xs font-bold text-rose-600 uppercase tracking-widest mt-2 block',
+              },
+            ]}
+          />
+        </div>
+        <div className="mt-4 w-full">
+          <Button delay={4.0} onClick={onContinue} className="w-full">
+            Next
+          </Button>
+        </div>
       </div>
     </ScreenShell>
   );

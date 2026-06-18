@@ -6,24 +6,32 @@ import { ScreenShell } from '../components/ui/ScreenShell';
 export function TutorialScreenThree({ onContinue }: { onContinue: () => void }) {
   return (
     <ScreenShell>
-      <div className="flex flex-col items-center gap-10 text-center">
-        <ScreenHeading>Good News</ScreenHeading>
-        <RevealLines
-          lines={[
-            {
-              text: 'For the first time in recorded history, you now have a chance.',
-              delay: 0.3,
-            },
-            {
-              text: "Let's begin.",
-              delay: 1.9,
-              className: 'text-lg font-medium text-slate-800',
-            },
-          ]}
-        />
-        <Button delay={2.7} onClick={onContinue}>
-          Continue
-        </Button>
+      <div className="flex flex-col items-center gap-8 w-full max-w-sm mx-auto">
+        <ScreenHeading delay={0.1}>Your Mission</ScreenHeading>
+        <div className="w-full mt-4">
+          <RevealLines
+            lines={[
+              {
+                text: 'We have granted you access to the Command Center.',
+                delay: 0.4,
+              },
+              {
+                text: 'Use the radar, analyze distance metrics, and intercept his signal.',
+                delay: 1.5,
+              },
+              {
+                text: "Let's begin.",
+                delay: 3.0,
+                className: 'text-xs font-bold text-indigo-600 uppercase tracking-widest mt-2 block',
+              },
+            ]}
+          />
+        </div>
+        <div className="mt-4 w-full">
+          <Button delay={4.0} onClick={onContinue} className="w-full">
+            Access Command Center
+          </Button>
+        </div>
       </div>
     </ScreenShell>
   );

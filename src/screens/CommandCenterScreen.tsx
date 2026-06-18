@@ -4,7 +4,6 @@ import { TargetProfile } from '../components/command-center/TargetProfile';
 import { RadarSystem } from '../components/command-center/RadarSystem';
 import { DistanceAnalysis } from '../components/command-center/DistanceAnalysis';
 import { MissionFeed } from '../components/command-center/MissionFeed';
-import { AchievementsPanel } from '../components/command-center/AchievementsPanel';
 import { ArrivalSequence } from '../components/command-center/ArrivalSequence';
 import { GradientBackdrop } from '../components/ui/GradientBackdrop';
 import { useMissionTracking } from '../hooks/useMissionTracking';
@@ -51,10 +50,6 @@ export function CommandCenterScreen() {
               distance={mission.distance}
               signalAcquired={mission.signalAcquired}
               isOffline={mission.isOffline}
-            />
-            <AchievementsPanel
-              signalAcquired={mission.signalAcquired}
-              distance={mission.distance}
             />
 
             {(mission.userError || mission.targetError) && (
