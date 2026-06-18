@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: "Newsreader", Georgia, serif;
+}
+
+html,
+body {
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+::selection {
+  background-color: #ffffff;
+  color: #000000;
+}

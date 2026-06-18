@@ -1,0 +1,14 @@
+rules_version = '2';
+
+// Demo-only rules: open read/write on the single tracked document so the
+// app works with no auth layer. Before any real deployment, restrict
+// writes to an authenticated tracker device (e.g. Firebase Auth + a check
+// against a known UID) so third parties can't overwrite Eusha's location.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /targets/{targetId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}
