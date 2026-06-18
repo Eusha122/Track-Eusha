@@ -10,7 +10,7 @@ export interface RevealLine {
 export function RevealLines({ lines }: { lines: RevealLine[] }) {
   return (
     <div className="flex flex-col gap-3 w-full">
-      {lines.map((line, i) => (
+      {lines.map((line) => (
         <motion.div
           key={line.text}
           initial={{ opacity: 0, x: -10, filter: 'blur(2px)' }}
