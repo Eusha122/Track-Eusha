@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 import { TargetProfile } from '../components/command-center/TargetProfile';
 import { RadarSystem } from '../components/command-center/RadarSystem';
-import { DistanceAnalysis } from '../components/command-center/DistanceAnalysis';
 import { MissionFeed } from '../components/command-center/MissionFeed';
 import { ArrivalSequence } from '../components/command-center/ArrivalSequence';
 import { GradientBackdrop } from '../components/ui/GradientBackdrop';
@@ -45,7 +44,6 @@ export function CommandCenterScreen() {
           <div className="flex w-full max-w-md flex-col items-center gap-6">
             <TargetProfile status={mission.targetStatus} />
             <RadarSystem bearing={mission.bearing} />
-            <DistanceAnalysis meters={mission.distance} />
             <MissionFeed
               distance={mission.distance}
               signalAcquired={mission.signalAcquired}
