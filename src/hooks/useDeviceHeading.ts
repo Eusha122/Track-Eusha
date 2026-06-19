@@ -36,25 +36,16 @@ function smoothAngle(prev: number, next: number, alpha: number): number {
 
 export function useDeviceHeading() {
   const [heading, setHeading] = useState<number | null>(null);
-  const [permission, setPermission] = useState<HeadingPermission>('unknown');
-  const smoothedRef = useRef<number | null>(null);
-  const hasAbsoluteRef = useRef(false);
-
-  useEffect(() => {
-    if (!('DeviceOrientationEvent' in window)) {
-      setPermission('unsupported');
-      return;
-    }
-
+  const [permission, setPermission] = useState<HeadingPermission>(() => {
+    if (!('DeviceOrientationEvent' in window)) return 'unsupported';
     const requestFn = (
       DeviceOrientationEvent as unknown as DeviceOrientationEventConstructorWithPermission
     ).requestPermission;
-
-    if (typeof requestFn !== 'function') {
-      // Android / non-iOS: no permission API needed
-      setPermission('granted');
-    }
-  }, []);
+    // Android / non-iOS: no permission API needed, so it's safe to start listening.
+    return typeof requestFn !== 'function' ? 'granted' : 'unknown';
+  });
+  const smoothedRef = useRef<number | null>(null);
+  const hasAbsoluteRef = useRef(false);
 
   useEffect(() => {
     if (permission !== 'granted') return;

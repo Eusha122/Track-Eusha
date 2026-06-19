@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { useUserLocation } from './useUserLocation';
 import { useTargetLocation } from './useTargetLocation';
 import { calculateBearingDegrees, calculateDistanceMeters } from '../lib/geo';
@@ -35,7 +35,7 @@ export function useMissionTracking(): MissionTracking {
   const { position: userPosition, error: userError, ready: signalAcquired } = useUserLocation();
   const { target, error: targetError, isOffline } = useTargetLocation();
 
-  const prevStageRef = useRef<MissionStage>('mission-started');
+  const [committedStage, setCommittedStage] = useState<MissionStage>('mission-started');
 
   const rawDistance = useMemo(() => {
     if (!userPosition || !target) return null;
@@ -63,31 +63,27 @@ export function useMissionTracking(): MissionTracking {
     stage = 'signal-acquired';
   } else if (rawDistance === null) {
     stage = 'target-located';
-  } else {
-    const prev = prevStageRef.current;
-
-    if (prev === 'target-found') {
-      stage = rawDistance > FOUND_EXIT ? 'approaching-target' : 'target-found';
-    } else if (prev === 'approaching-target') {
-      if (rawDistance <= FOUND_ENTER) {
-        stage = 'target-found';
-      } else if (rawDistance > APPROACH_EXIT) {
-        stage = 'target-located';
-      } else {
-        stage = 'approaching-target';
-      }
+  } else if (committedStage === 'target-found') {
+    stage = rawDistance > FOUND_EXIT ? 'approaching-target' : 'target-found';
+  } else if (committedStage === 'approaching-target') {
+    if (rawDistance <= FOUND_ENTER) {
+      stage = 'target-found';
+    } else if (rawDistance > APPROACH_EXIT) {
+      stage = 'target-located';
     } else {
-      if (rawDistance <= FOUND_ENTER) {
-        stage = 'target-found';
-      } else if (rawDistance <= APPROACH_ENTER) {
-        stage = 'approaching-target';
-      } else {
-        stage = 'target-located';
-      }
+      stage = 'approaching-target';
     }
+  } else if (rawDistance <= FOUND_ENTER) {
+    stage = 'target-found';
+  } else if (rawDistance <= APPROACH_ENTER) {
+    stage = 'approaching-target';
+  } else {
+    stage = 'target-located';
   }
 
-  prevStageRef.current = stage;
+  if (stage !== committedStage) {
+    setCommittedStage(stage);
+  }
 
   const targetStatus = isOffline ? 'Signal Lost' : target ? 'Active' : 'Unknown';
 

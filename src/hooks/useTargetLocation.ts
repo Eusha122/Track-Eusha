@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useInterval } from './useInterval';
+import { readCachedTarget, writeCachedTarget } from '../lib/storage';
 
 export interface TargetLocation {
   latitude: number;
@@ -15,7 +16,11 @@ export interface TargetLocation {
 const OFFLINE_THRESHOLD_SECONDS = 60;
 
 export function useTargetLocation() {
-  const [target, setTarget] = useState<TargetLocation | null>(null);
+  // Seed from localStorage so a fresh page load shows the last known fix
+  // immediately instead of "no data" while the first snapshot is in flight.
+  const [target, setTarget] = useState<TargetLocation | null>(() =>
+    readCachedTarget<TargetLocation>(),
+  );
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
@@ -28,18 +33,21 @@ export function useTargetLocation() {
       (snapshot) => {
         setError(null);
         if (!snapshot.exists()) {
-          setTarget(null);
+          // The tracker stopped writing (or the doc was never created) —
+          // keep showing the last known position rather than clearing it.
           return;
         }
         const data = snapshot.data();
-        setTarget({
+        const next: TargetLocation = {
           latitude: data.latitude,
           longitude: data.longitude,
           accuracy: data.accuracy,
           timestamp: data.timestamp,
           speed: data.speed,
           heading: data.heading,
-        });
+        };
+        setTarget(next);
+        writeCachedTarget(next);
       },
       (snapshotError) => setError(snapshotError.message),
     );
