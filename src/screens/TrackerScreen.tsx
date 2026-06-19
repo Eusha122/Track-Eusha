@@ -4,6 +4,7 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { ScreenShell } from '../components/ui/ScreenShell';
 import { SectionLabel } from '../components/ui/SectionLabel';
 import { useLocationBroadcaster } from '../hooks/useLocationBroadcaster';
+import type { AccuracyLevel } from '../hooks/useLocationBroadcaster';
 import { EASE_CINEMATIC } from '../lib/motion';
 
 function formatSyncTime(timestamp: number | null) {
@@ -11,10 +12,19 @@ function formatSyncTime(timestamp: number | null) {
   return new Date(timestamp).toTimeString().slice(0, 8);
 }
 
+const ACCURACY_CONFIG: Record<NonNullable<AccuracyLevel>, { label: string; color: string; textColor: string; bg: string; border: string }> = {
+  excellent: { label: '● Excellent', color: 'bg-emerald-500', textColor: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+  good:      { label: '● Good',      color: 'bg-emerald-400', textColor: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
+  fair:      { label: '● Fair',      color: 'bg-amber-400',   textColor: 'text-amber-400',   bg: 'bg-amber-400/10',   border: 'border-amber-400/20' },
+  poor:      { label: '● Poor',      color: 'bg-orange-500',  textColor: 'text-orange-400',  bg: 'bg-orange-500/10',  border: 'border-orange-500/20' },
+  unusable:  { label: '● Unusable',  color: 'bg-rose-500',    textColor: 'text-rose-400',    bg: 'bg-rose-500/10',    border: 'border-rose-500/20' },
+};
+
 export function TrackerScreen() {
-  const { status, error, syncError, position, lastSyncAt, start } = useLocationBroadcaster();
+  const { status, error, syncError, position, lastSyncAt, accuracyLevel, start } = useLocationBroadcaster();
 
   const sharingStatus = (() => {
+    if (status === 'active' && accuracyLevel === 'unusable') return { label: 'Blocked — Accuracy Too Low', color: 'bg-rose-500', pulse: false, textColor: 'text-rose-400' } as const;
     if (status === 'active' && syncError) return { label: 'Sync Failed', color: 'bg-rose-500', pulse: false, textColor: 'text-rose-400' } as const;
     if (status === 'active' && lastSyncAt) return { label: 'Sharing Active', color: 'bg-emerald-500', pulse: true, textColor: 'text-emerald-400' } as const;
     if (status === 'active') return { label: 'Acquiring Signal…', color: 'bg-amber-400', pulse: true, textColor: 'text-amber-400' } as const;
@@ -22,6 +32,9 @@ export function TrackerScreen() {
     if (status === 'error') return { label: 'Location Error', color: 'bg-rose-500', pulse: false, textColor: 'text-rose-400' } as const;
     return { label: 'Not Sharing', color: 'bg-white/30', pulse: false, textColor: 'text-white/40' } as const;
   })();
+
+  const accConfig = accuracyLevel ? ACCURACY_CONFIG[accuracyLevel] : null;
+  const showAccuracyWarning = accuracyLevel === 'poor' || accuracyLevel === 'unusable';
 
   return (
     <ScreenShell maxWidthClassName="max-w-sm">
@@ -54,6 +67,9 @@ export function TrackerScreen() {
           <>
             <p className="text-sm text-white/45">
               This device will broadcast its live location. Keep this tab open.
+            </p>
+            <p className="text-xs text-amber-400/70">
+              ⚠ For accurate results, always share from a <strong>phone</strong> with GPS enabled — not a laptop or desktop.
             </p>
             <Button onClick={start}>Start Broadcasting</Button>
           </>
@@ -89,11 +105,19 @@ export function TrackerScreen() {
             </div>
 
             <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-4 text-sm">
+              {/* ── Accuracy Level (prominent) ── */}
               <div className="flex items-baseline justify-between gap-4">
                 <SectionLabel>GPS Accuracy</SectionLabel>
-                <span className="text-white">
-                  {position ? `${Math.round(position.coords.accuracy)}m` : '—'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-white">
+                    {position ? `${Math.round(position.coords.accuracy)}m` : '—'}
+                  </span>
+                  {accConfig && (
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${accConfig.bg} ${accConfig.border} ${accConfig.textColor} border`}>
+                      {accConfig.label}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex items-baseline justify-between gap-4">
                 <SectionLabel>Coordinates</SectionLabel>
@@ -109,7 +133,28 @@ export function TrackerScreen() {
               </div>
             </div>
 
-            {syncError && (
+            {/* ── Accuracy Warning ── */}
+            {showAccuracyWarning && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-left"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wider text-amber-400">
+                  ⚠ Low Accuracy Detected
+                </p>
+                <p className="mt-1.5 text-xs leading-relaxed text-amber-300/70">
+                  {accuracyLevel === 'unusable'
+                    ? 'Location data is too inaccurate to sync — broadcasting is paused. This device is using WiFi/IP positioning instead of GPS.'
+                    : 'Your position may be off by hundreds of meters. Results on the Command Center will be unreliable.'}
+                </p>
+                <p className="mt-2 text-xs font-medium text-amber-200/80">
+                  → Open this page on your <strong>phone</strong> with GPS enabled for accurate tracking.
+                </p>
+              </motion.div>
+            )}
+
+            {syncError && !showAccuracyWarning && (
               <p className="mt-4 border-t border-white/10 pt-4 text-xs text-white/40">
                 Sync failed: {syncError}
               </p>
