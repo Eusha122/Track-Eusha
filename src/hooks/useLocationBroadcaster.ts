@@ -3,10 +3,14 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { calculateDistanceMeters } from '../lib/geo';
 
-const SYNC_INTERVAL_MS = 3000;
+const SYNC_INTERVAL_MS = 2000;
 const MIN_MOVEMENT_METERS = 2;
 const MAX_ACCEPTABLE_ACCURACY_METERS = 500;
-const SMOOTH_ALPHA = 0.35;
+
+// Adaptive smoothing
+const ALPHA_MOVING = 0.6;
+const ALPHA_STILL = 0.15;
+const MOVEMENT_THRESHOLD_M = 3;
 
 type BroadcasterStatus = 'idle' | 'requesting' | 'active' | 'error';
 
@@ -54,19 +58,21 @@ export function useLocationBroadcaster() {
         const level = getAccuracyLevel(accuracy);
         setAccuracyLevel(level);
 
-        // Block sync when accuracy is unusable to prevent garbage data
+        // Block sync when accuracy is unusable
         if (level === 'unusable') {
           setSyncError(`Accuracy too low (${Math.round(accuracy)}m). Use a phone with GPS for accurate tracking.`);
           return;
         }
 
-        // Smooth coordinates to reduce GPS jitter in broadcast data
+        // Adaptive smoothing
         if (smoothedRef.current === null) {
           smoothedRef.current = { latitude, longitude };
         } else {
+          const jump = calculateDistanceMeters(smoothedRef.current, { latitude, longitude });
+          const alpha = jump > MOVEMENT_THRESHOLD_M ? ALPHA_MOVING : ALPHA_STILL;
           smoothedRef.current = {
-            latitude: lerp(smoothedRef.current.latitude, latitude, SMOOTH_ALPHA),
-            longitude: lerp(smoothedRef.current.longitude, longitude, SMOOTH_ALPHA),
+            latitude: lerp(smoothedRef.current.latitude, latitude, alpha),
+            longitude: lerp(smoothedRef.current.longitude, longitude, alpha),
           };
         }
 

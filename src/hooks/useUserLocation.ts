@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Coordinates } from '../lib/geo';
+import { calculateDistanceMeters } from '../lib/geo';
 
-// Exponential moving average smoothing factor.
-// Lower = smoother but laggier. 0.3 is a good balance for GPS jitter.
-const SMOOTH_ALPHA = 0.3;
+// Adaptive smoothing: responsive when moving, stable when still
+const ALPHA_MOVING = 0.6;   // React quickly to real movement
+const ALPHA_STILL = 0.15;   // Suppress jitter when stationary
+const MOVEMENT_THRESHOLD_M = 3; // Below this = standing still
 
 function lerp(prev: number, next: number, alpha: number): number {
   return prev + alpha * (next - prev);
@@ -25,13 +27,16 @@ export function useUserLocation() {
         setError(null);
         const raw = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
 
-        // Apply exponential moving average to smooth out GPS jitter
         if (smoothedRef.current === null) {
           smoothedRef.current = raw;
         } else {
+          // Pick alpha based on how far the raw reading is from smoothed
+          const jump = calculateDistanceMeters(smoothedRef.current, raw);
+          const alpha = jump > MOVEMENT_THRESHOLD_M ? ALPHA_MOVING : ALPHA_STILL;
+
           smoothedRef.current = {
-            latitude: lerp(smoothedRef.current.latitude, raw.latitude, SMOOTH_ALPHA),
-            longitude: lerp(smoothedRef.current.longitude, raw.longitude, SMOOTH_ALPHA),
+            latitude: lerp(smoothedRef.current.latitude, raw.latitude, alpha),
+            longitude: lerp(smoothedRef.current.longitude, raw.longitude, alpha),
           };
         }
 

@@ -21,11 +21,13 @@ export interface MissionTracking {
   targetError: string | null;
 }
 
-// Hysteresis thresholds to prevent stage flickering from GPS jitter.
-// Enter "target-found" at ≤ FOUND_ENTER, leave at > FOUND_EXIT.
-// Enter "approaching-target" at ≤ APPROACH_ENTER, leave at > APPROACH_EXIT.
+// GPS dead zone: distances below this are indistinguishable from 0
+// due to hardware limitations (~5-15m accuracy on phones).
+const GPS_DEAD_ZONE_M = 5;
+
+// Hysteresis thresholds to prevent stage flickering.
 const FOUND_ENTER = 15;
-const FOUND_EXIT = 30;
+const FOUND_EXIT = 35;
 const APPROACH_ENTER = 100;
 const APPROACH_EXIT = 130;
 
@@ -33,13 +35,19 @@ export function useMissionTracking(): MissionTracking {
   const { position: userPosition, error: userError, ready: signalAcquired } = useUserLocation();
   const { target, error: targetError, isOffline } = useTargetLocation();
 
-  // Keep a ref of the previous stage to apply hysteresis
   const prevStageRef = useRef<MissionStage>('mission-started');
 
-  const distance = useMemo(() => {
+  const rawDistance = useMemo(() => {
     if (!userPosition || !target) return null;
-    return Math.round(calculateDistanceMeters(userPosition, target));
+    return calculateDistanceMeters(userPosition, target);
   }, [userPosition, target]);
+
+  // Apply dead zone: anything under GPS_DEAD_ZONE_M becomes 0
+  const distance = useMemo(() => {
+    if (rawDistance === null) return null;
+    if (rawDistance < GPS_DEAD_ZONE_M) return 0;
+    return Math.round(rawDistance);
+  }, [rawDistance]);
 
   const bearing = useMemo(() => {
     if (!userPosition || !target) return null;
@@ -48,33 +56,30 @@ export function useMissionTracking(): MissionTracking {
 
   const targetLocated = target !== null;
 
-  // Apply hysteresis-based stage transitions to prevent jitter-driven flickering
   let stage: MissionStage;
   if (!signalAcquired) {
     stage = 'mission-started';
   } else if (!targetLocated) {
     stage = 'signal-acquired';
-  } else if (distance === null) {
+  } else if (rawDistance === null) {
     stage = 'target-located';
   } else {
     const prev = prevStageRef.current;
 
     if (prev === 'target-found') {
-      // Stay in "found" until distance exceeds exit threshold
-      stage = distance > FOUND_EXIT ? 'approaching-target' : 'target-found';
+      stage = rawDistance > FOUND_EXIT ? 'approaching-target' : 'target-found';
     } else if (prev === 'approaching-target') {
-      if (distance <= FOUND_ENTER) {
+      if (rawDistance <= FOUND_ENTER) {
         stage = 'target-found';
-      } else if (distance > APPROACH_EXIT) {
+      } else if (rawDistance > APPROACH_EXIT) {
         stage = 'target-located';
       } else {
         stage = 'approaching-target';
       }
     } else {
-      // From 'target-located' or other states
-      if (distance <= FOUND_ENTER) {
+      if (rawDistance <= FOUND_ENTER) {
         stage = 'target-found';
-      } else if (distance <= APPROACH_ENTER) {
+      } else if (rawDistance <= APPROACH_ENTER) {
         stage = 'approaching-target';
       } else {
         stage = 'target-located';
