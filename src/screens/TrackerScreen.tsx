@@ -4,6 +4,7 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { ScreenShell } from '../components/ui/ScreenShell';
 import { SectionLabel } from '../components/ui/SectionLabel';
 import { useLocationBroadcaster } from '../hooks/useLocationBroadcaster';
+import { useHunterLocation } from '../hooks/useHunterLocation';
 import type { AccuracyLevel } from '../hooks/useLocationBroadcaster';
 import { EASE_CINEMATIC } from '../lib/motion';
 
@@ -20,8 +21,13 @@ const ACCURACY_CONFIG: Record<NonNullable<AccuracyLevel>, { label: string; color
   unusable:  { label: '● Unusable',  color: 'bg-rose-500',    textColor: 'text-rose-400',    bg: 'bg-rose-500/10',    border: 'border-rose-500/20' },
 };
 
+function formatTimestamp(epoch: number) {
+  return new Date(epoch * 1000).toTimeString().slice(0, 8);
+}
+
 export function TrackerScreen() {
   const { status, error, syncError, position, lastSyncAt, accuracyLevel, start } = useLocationBroadcaster();
+  const { hunter, isOffline: hunterOffline } = useHunterLocation();
 
   const sharingStatus = (() => {
     if (status === 'active' && accuracyLevel === 'unusable') return { label: 'Blocked — Accuracy Too Low', color: 'bg-rose-500', pulse: false, textColor: 'text-rose-400' } as const;
@@ -161,6 +167,67 @@ export function TrackerScreen() {
             )}
           </motion.div>
         )}
+
+        {/* ── Hunter (Tasmia) Location Intel ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: EASE_CINEMATIC }}
+          className="w-full rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-left"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2.5 w-2.5">
+              {hunter && !hunterOffline && (
+                <motion.span
+                  className="absolute inline-flex h-full w-full rounded-full bg-indigo-400"
+                  animate={{ scale: [1, 1.8], opacity: [0.6, 0] }}
+                  transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
+                />
+              )}
+              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${
+                hunter ? (hunterOffline ? 'bg-amber-400' : 'bg-indigo-400') : 'bg-white/30'
+              }`} />
+            </span>
+            <span className="text-lg font-medium text-white">Hunter Intel</span>
+            <span className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider border ${
+              hunter
+                ? hunterOffline
+                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                  : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
+                : 'bg-white/5 border-white/10 text-white/30'
+            }`}>
+              {hunter ? (hunterOffline ? '● Offline' : '● Live') : '● No Data'}
+            </span>
+          </div>
+
+          <p className="mt-1.5 text-xs text-white/35">
+            Tasmia's live location
+          </p>
+
+          {hunter ? (
+            <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 text-sm">
+              <div className="flex items-baseline justify-between gap-4">
+                <SectionLabel>Coordinates</SectionLabel>
+                <span className="text-white">
+                  {hunter.latitude.toFixed(5)}, {hunter.longitude.toFixed(5)}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <SectionLabel>Accuracy</SectionLabel>
+                <span className="text-white">{Math.round(hunter.accuracy)}m</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <SectionLabel>Last Update</SectionLabel>
+                <span className="text-white">{formatTimestamp(hunter.timestamp)}</span>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-4 border-t border-white/10 pt-4 text-xs text-white/35">
+              Waiting for Tasmia to open the app…
+            </p>
+          )}
+        </motion.div>
+
       </div>
     </ScreenShell>
   );
