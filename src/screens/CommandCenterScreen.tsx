@@ -5,6 +5,7 @@ import { RadarSystem } from '../components/command-center/RadarSystem';
 import { DistanceAnalysis } from '../components/command-center/DistanceAnalysis';
 import { MissionFeed } from '../components/command-center/MissionFeed';
 import { ArrivalSequence } from '../components/command-center/ArrivalSequence';
+import { ProximityAlert } from '../components/command-center/ProximityAlert';
 import { GradientBackdrop } from '../components/ui/GradientBackdrop';
 import { useMissionTracking } from '../hooks/useMissionTracking';
 import { screenTransition, screenVariants } from '../lib/motion';
@@ -12,6 +13,7 @@ import { screenTransition, screenVariants } from '../lib/motion';
 export function CommandCenterScreen() {
   const mission = useMissionTracking();
   const [dismissedArrival, setDismissedArrival] = useState(false);
+  const [proximityTriggered, setProximityTriggered] = useState(false);
   const [trackedStage, setTrackedStage] = useState(mission.stage);
 
   if (mission.stage !== trackedStage) {
@@ -20,6 +22,18 @@ export function CommandCenterScreen() {
   }
 
   const showArrival = mission.stage === 'target-found' && !dismissedArrival;
+
+  // Proximity alert: latch on when within 120m, stays until manually closed
+  const PROXIMITY_THRESHOLD = 120;
+  const isInRange =
+    mission.distance !== null && mission.distance <= PROXIMITY_THRESHOLD;
+
+  // Once we enter range, trigger the alert — it stays on until dismissed
+  if (isInRange && !proximityTriggered) {
+    setProximityTriggered(true);
+  }
+
+  const showProximity = proximityTriggered && !showArrival;
 
   return (
     <>
@@ -65,6 +79,13 @@ export function CommandCenterScreen() {
       <AnimatePresence>
         {showArrival && (
           <ArrivalSequence key="arrival" onDismiss={() => setDismissedArrival(true)} />
+        )}
+        {showProximity && (
+          <ProximityAlert
+            key="proximity"
+            distance={mission.distance}
+            onDismiss={() => setProximityTriggered(false)}
+          />
         )}
       </AnimatePresence>
     </>

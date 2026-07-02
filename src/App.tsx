@@ -14,7 +14,7 @@ import { GradientBackdrop } from './components/ui/GradientBackdrop';
 const isTrackerRoute = window.location.pathname.replace(/\/+$/, '') === '/tracker';
 
 function App() {
-  const [screen, setScreen] = useState<ScreenId>('loading');
+  const [screen, setScreen] = useState<ScreenId>('command-center');
   const advance = () => setScreen((current) => nextScreen(current));
 
   if (isTrackerRoute) {
