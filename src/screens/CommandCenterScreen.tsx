@@ -91,7 +91,7 @@ export function CommandCenterScreen() {
           <ProximityAlert
             key="proximity"
             distance={mission.distance}
-            onDismiss={() => setProximityTriggered(false)}
+            onDismiss={() => setProximityDismissed(true)}
           />
         )}
       </AnimatePresence>
