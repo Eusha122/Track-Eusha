@@ -8,6 +8,7 @@ const PROXIMITY_THRESHOLD = 120; // meters
 /**
  * Full-screen proximity alert that plays a buzzer sound when the user
  * is within 120 m of the target. Shows a dismiss button to silence it.
+ * On mobile, autoplay is blocked — a "Tap to activate" prompt is shown.
  */
 export function ProximityAlert({
   distance,
@@ -18,18 +19,23 @@ export function ProximityAlert({
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [pulsing, setPulsing] = useState(true);
+  const [soundPlaying, setSoundPlaying] = useState(false);
 
-  // Play buzzer on mount
+  // Create audio element on mount
   useEffect(() => {
     const audio = new Audio('/buzzer.mp3');
     audio.loop = true;
     audio.volume = 1;
     audioRef.current = audio;
 
-    // Attempt autoplay — some browsers block it without user interaction
-    audio.play().catch(() => {
-      // Autoplay blocked; sound will play after user interacts
-    });
+    // Try autoplay — works on desktop, blocked on mobile
+    audio
+      .play()
+      .then(() => setSoundPlaying(true))
+      .catch(() => {
+        // Autoplay blocked — user will need to tap
+        setSoundPlaying(false);
+      });
 
     return () => {
       audio.pause();
@@ -43,6 +49,12 @@ export function ProximityAlert({
     const id = setInterval(() => setPulsing((p) => !p), 600);
     return () => clearInterval(id);
   }, []);
+
+  const handleActivateSound = () => {
+    if (audioRef.current) {
+      audioRef.current.play().then(() => setSoundPlaying(true)).catch(() => {});
+    }
+  };
 
   const handleDismiss = () => {
     if (audioRef.current) {
@@ -113,9 +125,22 @@ export function ProximityAlert({
           </p>
         )}
         <p className="mt-1 text-sm text-slate-500">
-          Within {PROXIMITY_THRESHOLD}m range — buzzer active
+          Within {PROXIMITY_THRESHOLD}m range
         </p>
       </div>
+
+      {/* Tap to activate sound — shown when autoplay is blocked on mobile */}
+      {!soundPlaying && (
+        <motion.button
+          onClick={handleActivateSound}
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          whileTap={{ scale: 0.96 }}
+          className={`rounded-full bg-orange-500 px-8 py-4 text-sm font-semibold uppercase tracking-[0.15em] text-white shadow-lg shadow-orange-500/30 ${CLAY_RAISED}`}
+        >
+          🔊 Tap to Activate Buzzer
+        </motion.button>
+      )}
 
       {/* Dismiss button */}
       <motion.button
