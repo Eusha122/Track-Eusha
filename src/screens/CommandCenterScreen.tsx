@@ -14,6 +14,7 @@ export function CommandCenterScreen() {
   const mission = useMissionTracking();
   const [dismissedArrival, setDismissedArrival] = useState(false);
   const [proximityTriggered, setProximityTriggered] = useState(false);
+  const [proximityDismissed, setProximityDismissed] = useState(false);
   const [trackedStage, setTrackedStage] = useState(mission.stage);
 
   if (mission.stage !== trackedStage) {
@@ -28,12 +29,18 @@ export function CommandCenterScreen() {
   const isInRange =
     mission.distance !== null && mission.distance <= PROXIMITY_THRESHOLD;
 
-  // Once we enter range, trigger the alert — it stays on until dismissed
-  if (isInRange && !proximityTriggered) {
+  // Reset dismissed flag once user leaves the range, so it can re-trigger next time
+  if (!isInRange && proximityDismissed) {
+    setProximityDismissed(false);
+    setProximityTriggered(false);
+  }
+
+  // Trigger alert when in range and not already dismissed
+  if (isInRange && !proximityTriggered && !proximityDismissed) {
     setProximityTriggered(true);
   }
 
-  const showProximity = proximityTriggered && !showArrival;
+  const showProximity = proximityTriggered && !proximityDismissed && !showArrival;
 
   return (
     <>
